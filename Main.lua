@@ -20,11 +20,11 @@ title.Parent = frame
 local button = Instance.new("TextButton")
 button.Size = UDim2.new(0, 200, 0, 45)
 button.Position = UDim2.new(0.5, -100, 0, 70)
-button.Text = "Привет скиипт в разработке!"
+button.Text = "Привет!"
 button.Parent = frame
 
 button.MouseButton1Click:Connect(function()
-    button.Text = "Привет скрипт в разработке, " .. player.Name
+    button.Text = "Привет, " .. player.Name
 end)
 
 gui.Parent = player:WaitForChild("PlayerGui")
