@@ -1,5 +1,5 @@
 -- ============================================
---  ОБНОВЛЁННОЕ МЕНЮ v2 (упрощённое и надёжное)
+--  ОБНОВЛЁННОЕ МЕНЮ v3 (фикс кликов)
 -- ============================================
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
@@ -7,16 +7,15 @@ local UserInputService = game:GetService("UserInputService")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
--- Очистка старых меню и ESP
-for _, name in pairs({"ModernCheatMenu", "MainMenu", "SimpleMenu", "MobileMenu", "CheatMenu_v2"}) do
+-- Очистка
+for _, name in pairs({"ModernCheatMenu", "MainMenu", "SimpleMenu", "MobileMenu", "CheatMenu_v2", "CheatMenu_v3"}) do
 	local old = playerGui:FindFirstChild(name)
 	if old then old:Destroy() end
 end
 for _, v in pairs(workspace:GetDescendants()) do
-	if v.Name == "CHEAT_ESP" or v.Name == "ESP_Box" then v:Destroy() end
+	if v.Name == "CHEAT_ESP" or v.Name == "CHEAT_HL" or v.Name == "CHEAT_BOX" then v:Destroy() end
 end
 
--- Цвета
 local ACCENT = Color3.fromRGB(138, 43, 226)
 local BG = Color3.fromRGB(18, 18, 22)
 local SIDEBAR = Color3.fromRGB(24, 24, 30)
@@ -25,274 +24,66 @@ local TEXT = Color3.fromRGB(240, 240, 245)
 local SUBTEXT = Color3.fromRGB(150, 150, 160)
 
 -- ============================================
--- GUI
+-- GUI (фикс: высокий DisplayOrder + IgnoreGuiInset)
 -- ============================================
 local gui = Instance.new("ScreenGui")
-gui.Name = "CheatMenu_v2"
+gui.Name = "CheatMenu_v3"
 gui.ResetOnSpawn = false
 gui.IgnoreGuiInset = true
+gui.DisplayOrder = 999999              -- 🔥 ПОВЕРХ ВСЕГО
 gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+gui.Enabled = true
 gui.Parent = playerGui
 
--- Кнопка открытия
+-- ============================================
+-- КНОПКА ОТКРЫТИЯ (большая, вверху справа)
+-- ============================================
 local openBtn = Instance.new("TextButton")
-openBtn.Size = UDim2.new(0, 50, 0, 50)
-openBtn.Position = UDim2.new(0, 20, 0.5, -25)
+openBtn.Name = "OpenBtn"
+openBtn.Size = UDim2.new(0, 60, 0, 60)
+openBtn.Position = UDim2.new(1, -80, 0, 80)   -- справа сверху (не под топбаром)
 openBtn.BackgroundColor3 = ACCENT
 openBtn.Text = "☰"
 openBtn.TextColor3 = Color3.new(1, 1, 1)
-openBtn.TextSize = 24
+openBtn.TextSize = 28
 openBtn.Font = Enum.Font.GothamBold
 openBtn.BorderSizePixel = 0
 openBtn.Active = true
+openBtn.Selectable = true
+openBtn.ZIndex = 100                    -- поверх всего в GUI
+openBtn.AutoButtonColor = true
 openBtn.Parent = gui
-Instance.new("UICorner", openBtn).CornerRadius = UDim.new(1, 0)
 
--- Главное окно
-local main = Instance.new("Frame")
-main.Size = UDim2.new(0, 520, 0, 360)
-main.Position = UDim2.new(0.5, -260, 0.5, -180)
-main.BackgroundColor3 = BG
-main.BorderSizePixel = 0
-main.Visible = false
-main.Active = true
-main.Parent = gui
-Instance.new("UICorner", main).CornerRadius = UDim.new(0, 12)
+local corner = Instance.new("UICorner", openBtn)
+corner.CornerRadius = UDim.new(1, 0)
 
-local mainStroke = Instance.new("UIStroke", main)
-mainStroke.Color = Color3.fromRGB(70, 70, 90)
-mainStroke.Thickness = 1.5
+local strokeBtn = Instance.new("UIStroke", openBtn)
+strokeBtn.Color = Color3.fromRGB(200, 150, 255)
+strokeBtn.Thickness = 2
 
--- Перетаскивание
-local dragging = false
-local dragStart, startPos
-
-main.InputBegan:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-		dragging = true
-		dragStart = input.Position
-		startPos = main.Position
-	end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-	if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-		local delta = input.Position - dragStart
-		main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-	end
-end)
-
-UserInputService.InputEnded:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-		dragging = false
-	end
-end)
-
--- Сайдбар
-local sidebar = Instance.new("Frame")
-sidebar.Size = UDim2.new(0, 140, 1, 0)
-sidebar.BackgroundColor3 = SIDEBAR
-sidebar.BorderSizePixel = 0
-sidebar.Parent = main
-Instance.new("UICorner", sidebar).CornerRadius = UDim.new(0, 12)
-
-local logo = Instance.new("TextLabel")
-logo.Size = UDim2.new(1, 0, 0, 45)
-logo.BackgroundTransparency = 1
-logo.Text = "⚡ PULSE"
-logo.TextColor3 = ACCENT
-logo.Font = Enum.Font.GothamBold
-logo.TextSize = 18
-logo.Parent = sidebar
-
-local tabHolder = Instance.new("Frame")
-tabHolder.Size = UDim2.new(1, -16, 1, -60)
-tabHolder.Position = UDim2.new(0, 8, 0, 50)
-tabHolder.BackgroundTransparency = 1
-tabHolder.Parent = sidebar
-local tabLayout = Instance.new("UIListLayout", tabHolder)
-tabLayout.Padding = UDim.new(0, 5)
-
--- Контент
-local content = Instance.new("Frame")
-content.Size = UDim2.new(1, -150, 1, -20)
-content.Position = UDim2.new(0, 145, 0, 10)
-content.BackgroundTransparency = 1
-content.Parent = main
-
-local pageTitle = Instance.new("TextLabel")
-pageTitle.Size = UDim2.new(1, 0, 0, 28)
-pageTitle.BackgroundTransparency = 1
-pageTitle.Text = "MAIN"
-pageTitle.TextColor3 = TEXT
-pageTitle.Font = Enum.Font.GothamBold
-pageTitle.TextSize = 16
-pageTitle.TextXAlignment = Enum.TextXAlignment.Left
-pageTitle.Parent = content
-
-local scroll = Instance.new("ScrollingFrame")
-scroll.Size = UDim2.new(1, 0, 1, -34)
-scroll.Position = UDim2.new(0, 0, 0, 32)
-scroll.BackgroundTransparency = 1
-scroll.BorderSizePixel = 0
-scroll.ScrollBarThickness = 3
-scroll.ScrollBarImageColor3 = ACCENT
-scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
-scroll.Parent = content
-local scrollLayout = Instance.new("UIListLayout", scroll)
-scrollLayout.Padding = UDim.new(0, 6)
-scrollLayout.SortOrder = Enum.SortOrder.LayoutOrder
-
--- ============================================
--- ЭЛЕМЕНТЫ
--- ============================================
-local function createToggle(name, default, callback)
-	local frame = Instance.new("Frame")
-	frame.Size = UDim2.new(1, -8, 0, 34)
-	frame.BackgroundColor3 = ELEMENT
-	frame.BorderSizePixel = 0
-	frame.Parent = scroll
-	Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 8)
-
-	local label = Instance.new("TextLabel")
-	label.Size = UDim2.new(1, -70, 1, 0)
-	label.Position = UDim2.new(0, 12, 0, 0)
-	label.BackgroundTransparency = 1
-	label.Text = name
-	label.TextColor3 = TEXT
-	label.Font = Enum.Font.GothamMedium
-	label.TextSize = 13
-	label.TextXAlignment = Enum.TextXAlignment.Left
-	label.Parent = frame
-
-	local switch = Instance.new("TextButton")
-	switch.Size = UDim2.new(0, 42, 0, 20)
-	switch.Position = UDim2.new(1, -52, 0.5, -10)
-	switch.BackgroundColor3 = default and ACCENT or Color3.fromRGB(50, 50, 62)
-	switch.Text = ""
-	switch.BorderSizePixel = 0
-	switch.AutoButtonColor = false
-	switch.Active = true
-	switch.Parent = frame
-	Instance.new("UICorner", switch).CornerRadius = UDim.new(1, 0)
-
-	local circle = Instance.new("Frame")
-	circle.Size = UDim2.new(0, 16, 0, 16)
-	circle.Position = default and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
-	circle.BackgroundColor3 = Color3.new(1, 1, 1)
-	circle.BorderSizePixel = 0
-	circle.Parent = switch
-	Instance.new("UICorner", circle).CornerRadius = UDim.new(1, 0)
-
-	local state = default
-	switch.MouseButton1Click:Connect(function()
-		state = not state
-		TweenService:Create(switch, TweenInfo.new(0.15), {BackgroundColor3 = state and ACCENT or Color3.fromRGB(50, 50, 62)}):Play()
-		TweenService:Create(circle, TweenInfo.new(0.15), {Position = state and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)}):Play()
-		local ok, err = pcall(callback, state)
-		if not ok then warn("[CheatMenu] Ошибка в toggle:", err) end
-	end)
-end
-
-local function createButton(name, callback)
-	local btn = Instance.new("TextButton")
-	btn.Size = UDim2.new(1, -8, 0, 34)
-	btn.BackgroundColor3 = ELEMENT
-	btn.Text = name
-	btn.TextColor3 = TEXT
-	btn.Font = Enum.Font.GothamMedium
-	btn.TextSize = 13
-	btn.BorderSizePixel = 0
-	btn.AutoButtonColor = false
-	btn.Active = true
-	btn.Parent = scroll
-	Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
-
-	btn.MouseEnter:Connect(function()
-		TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = ACCENT}):Play()
-	end)
-	btn.MouseLeave:Connect(function()
-		TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = ELEMENT}):Play()
-	end)
-	btn.MouseButton1Click:Connect(function()
-		local ok, err = pcall(callback)
-		if not ok then warn("[CheatMenu] Ошибка в кнопке:", err) end
-	end)
-end
-
-local function createSlider(name, min, max, default, callback)
-	local frame = Instance.new("Frame")
-	frame.Size = UDim2.new(1, -8, 0, 48)
-	frame.BackgroundColor3 = ELEMENT
-	frame.BorderSizePixel = 0
-	frame.Parent = scroll
-	Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 8)
-
-	local label = Instance.new("TextLabel")
-	label.Size = UDim2.new(1, -20, 0, 18)
-	label.Position = UDim2.new(0, 10, 0, 4)
-	label.BackgroundTransparency = 1
-	label.Text = name .. ": " .. default
-	label.TextColor3 = TEXT
-	label.Font = Enum.Font.GothamMedium
-	label.TextSize = 12
-	label.TextXAlignment = Enum.TextXAlignment.Left
-	label.Parent = frame
-
-	local barBg = Instance.new("Frame")
-	barBg.Size = UDim2.new(1, -20, 0, 6)
-	barBg.Position = UDim2.new(0, 10, 1, -13)
-	barBg.BackgroundColor3 = Color3.fromRGB(50, 50, 62)
-	barBg.BorderSizePixel = 0
-	barBg.Parent = frame
-	Instance.new("UICorner", barBg).CornerRadius = UDim.new(1, 0)
-
-	local fill = Instance.new("Frame")
-	fill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
-	fill.BackgroundColor3 = ACCENT
-	fill.BorderSizePixel = 0
-	fill.Parent = barBg
-	Instance.new("UICorner", fill).CornerRadius = UDim.new(1, 0)
-
-	local draggingSlider = false
-	local function update(input)
-		local pos = math.clamp((input.Position.X - barBg.AbsolutePosition.X) / barBg.AbsoluteSize.X, 0, 1)
-		local value = math.floor(min + (max - min) * pos)
-		fill.Size = UDim2.new(pos, 0, 1, 0)
-		label.Text = name .. ": " .. value
-		local ok, err = pcall(callback, value)
-		if not ok then warn("[CheatMenu] Ошибка в слайдере:", err) end
-	end
-
-	barBg.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-			draggingSlider = true
-			update(input)
+-- 🔥 ФИКС: обработка нажатий через InputBegan (работает на мобиле)
+local function onClick(callback)
+	local touched = false
+	openBtn.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 
+		or input.UserInputType == Enum.UserInputType.Touch then
+			touched = true
 		end
 	end)
-	UserInputService.InputChanged:Connect(function(input)
-		if draggingSlider and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-			update(input)
+	openBtn.InputEnded:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 
+		or input.UserInputType == Enum.UserInputType.Touch then
+			if touched then
+				touched = false
+				callback()
+			end
 		end
 	end)
-	UserInputService.InputEnded:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-			draggingSlider = false
-		end
+	-- Fallback
+	openBtn.MouseButton1Click:Connect(function()
+		callback()
 	end)
-end
-
-local function createLabel(text)
-	local label = Instance.new("TextLabel")
-	label.Size = UDim2.new(1, -8, 0, 22)
-	label.BackgroundTransparency = 1
-	label.Text = text
-	label.TextColor3 = SUBTEXT
-	label.Font = Enum.Font.GothamBold
-	label.TextSize = 11
-	label.TextXAlignment = Enum.TextXAlignment.Left
-	label.Parent = scroll
+endbel.Parent = scroll
 end
 
 -- ============================================
