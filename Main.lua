@@ -1,79 +1,126 @@
--- goodSkillW | Neon Purple Menu
--- UI script for Roblox
+-- goodSkillW | Neon Purple
+-- UI menu
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
-local player = Players.LocalPlayer
 
-local gui = Instance.new("ScreenGui")
-gui.Name = "goodSkillW"
-gui.ResetOnSpawn = false
-gui.Parent = player:WaitForChild("PlayerGui")
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+local old = playerGui:FindFirstChild("goodSkillW")
+if old then
+    old:Destroy()
+end
 
 local purple = Color3.fromRGB(155, 70, 255)
 local bg = Color3.fromRGB(17, 15, 25)
 local panel = Color3.fromRGB(29, 25, 40)
 local white = Color3.fromRGB(245, 240, 255)
+local muted = Color3.fromRGB(155, 148, 174)
 
+local gui = Instance.new("ScreenGui")
+gui.Name = "goodSkillW"
+gui.ResetOnSpawn = false
+gui.Parent = playerGui
+
+local function round(obj, radius)
+    local c = Instance.new("UICorner")
+    c.CornerRadius = UDim.new(0, radius)
+    c.Parent = obj
+end
+
+local function animate(obj, duration, properties)
+    TweenService:Create(
+        obj,
+        TweenInfo.new(duration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+        properties
+    ):Play()
+end
+
+-- Main window
 local window = Instance.new("Frame")
+window.Name = "Window"
 window.Size = UDim2.fromOffset(340, 350)
 window.Position = UDim2.new(0.5, -170, 0.5, -175)
 window.BackgroundColor3 = bg
 window.BorderSizePixel = 0
+window.ClipsDescendants = true
 window.Parent = gui
+round(window, 12)
 
-Instance.new("UICorner", window).CornerRadius = UDim.new(0, 12)
-
-local outline = Instance.new("UIStroke", window)
+local outline = Instance.new("UIStroke")
 outline.Color = purple
 outline.Thickness = 2
+outline.Parent = window
 
-local header = Instance.new("TextLabel")
-header.Size = UDim2.new(1, -70, 0, 45)
-header.Position = UDim2.fromOffset(12, 0)
-header.BackgroundTransparency = 1
-header.Text = "goodSkillW"
-header.TextColor3 = white
-header.TextSize = 20
-header.Font = Enum.Font.GothamBold
-header.TextXAlignment = Enum.TextXAlignment.Left
+-- Header
+local header = Instance.new("Frame")
+header.Size = UDim2.new(1, 0, 0, 45)
+header.BackgroundColor3 = panel
+header.BorderSizePixel = 0
 header.Parent = window
 
+local title = Instance.new("TextLabel")
+title.Position = UDim2.fromOffset(12, 0)
+title.Size = UDim2.new(1, -100, 1, 0)
+title.BackgroundTransparency = 1
+title.Text = "goodSkillW"
+title.TextColor3 = white
+title.TextSize = 18
+title.Font = Enum.Font.GothamBold
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Parent = header
+
 local minimize = Instance.new("TextButton")
-minimize.Size = UDim2.fromOffset(35, 30)
-minimize.Position = UDim2.new(1, -45, 0, 8)
+minimize.Size = UDim2.fromOffset(30, 29)
+minimize.Position = UDim2.new(1, -75, 0, 8)
+minimize.BackgroundColor3 = bg
 minimize.Text = "—"
 minimize.TextColor3 = white
-minimize.BackgroundColor3 = panel
-minimize.Parent = window
-Instance.new("UICorner", minimize).CornerRadius = UDim.new(0, 7)
+minimize.TextSize = 18
+minimize.Font = Enum.Font.GothamBold
+minimize.Parent = header
+round(minimize, 7)
 
+local close = Instance.new("TextButton")
+close.Size = UDim2.fromOffset(30, 29)
+close.Position = UDim2.new(1, -38, 0, 8)
+close.BackgroundColor3 = Color3.fromRGB(95, 35, 115)
+close.Text = "×"
+close.TextColor3 = white
+close.TextSize = 20
+close.Font = Enum.Font.GothamBold
+close.Parent = header
+round(close, 7)
+
+-- Sidebar
 local sidebar = Instance.new("Frame")
-sidebar.Position = UDim2.fromOffset(8, 50)
-sidebar.Size = UDim2.new(0, 95, 1, -60)
+sidebar.Position = UDim2.fromOffset(8, 53)
+sidebar.Size = UDim2.new(0, 95, 1, -61)
 sidebar.BackgroundColor3 = panel
 sidebar.BorderSizePixel = 0
 sidebar.Parent = window
-Instance.new("UICorner", sidebar).CornerRadius = UDim.new(0, 8)
+round(sidebar, 8)
 
+-- Content
 local content = Instance.new("Frame")
-content.Position = UDim2.fromOffset(110, 50)
-content.Size = UDim2.new(1, -118, 1, -60)
+content.Position = UDim2.fromOffset(110, 53)
+content.Size = UDim2.new(1, -118, 1, -61)
 content.BackgroundTransparency = 1
 content.Parent = window
 
 local search = Instance.new("TextBox")
 search.Size = UDim2.new(1, -4, 0, 32)
 search.BackgroundColor3 = panel
-search.PlaceholderText = "Search..."
+search.PlaceholderText = "Search functions..."
 search.Text = ""
 search.TextColor3 = white
-search.PlaceholderColor3 = Color3.fromRGB(160, 150, 175)
-search.TextSize = 12
+search.PlaceholderColor3 = muted
+search.TextSize = 11
 search.Font = Enum.Font.Gotham
 search.ClearTextOnFocus = false
 search.Parent = content
-Instance.new("UICorner", search).CornerRadius = UDim.new(0, 7)
+round(search, 7)
 
 local pageTitle = Instance.new("TextLabel")
 pageTitle.Position = UDim2.fromOffset(2, 38)
@@ -94,21 +141,35 @@ list.BorderSizePixel = 0
 list.ScrollBarThickness = 3
 list.ScrollBarImageColor3 = purple
 list.AutomaticCanvasSize = Enum.AutomaticSize.Y
-list.CanvasSize = UDim2.new()
+list.CanvasSize = UDim2.new(0, 0, 0, 0)
 list.Parent = content
 
-local layout = Instance.new("UIListLayout")
-layout.Padding = UDim.new(0, 7)
-layout.Parent = list
+local listLayout = Instance.new("UIListLayout")
+listLayout.Padding = UDim.new(0, 7)
+listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+listLayout.Parent = list
 
+-- Pages and toggle states
 local pages = {
-    Main = {"Notifications", "Animations"},
-    Visuals = {"Purple glow", "Show labels"},
-    Settings = {"Compact mode", "Sound effects"}
+    Main = {
+        "Notifications",
+        "Animations"
+    },
+
+    Visuals = {
+        "Purple glow",
+        "Show labels"
+    },
+
+    Settings = {
+        "Compact mode",
+        "Sound effects"
+    }
 }
 
 local states = {}
 local rows = {}
+local tabButtons = {}
 local currentPage = "Main"
 
 local function render(page)
@@ -133,11 +194,11 @@ local function render(page)
         row.BackgroundColor3 = panel
         row.BorderSizePixel = 0
         row.Parent = list
-        Instance.new("UICorner", row).CornerRadius = UDim.new(0, 7)
+        round(row, 7)
 
         local label = Instance.new("TextLabel")
-        label.Size = UDim2.new(1, -65, 1, 0)
         label.Position = UDim2.fromOffset(8, 0)
+        label.Size = UDim2.new(1, -65, 1, 0)
         label.BackgroundTransparency = 1
         label.Text = name
         label.TextColor3 = white
@@ -156,16 +217,17 @@ local function render(page)
         toggle.TextSize = 10
         toggle.Font = Enum.Font.GothamBold
         toggle.Parent = row
-        Instance.new("UICorner", toggle).CornerRadius = UDim.new(0, 6)
+        round(toggle, 6)
 
         toggle.Activated:Connect(function()
             states[name] = not states[name]
+
             toggle.Text = states[name] and "ON" or "OFF"
 
-            TweenService:Create(toggle, TweenInfo.new(0.2), {
+            animate(toggle, 0.18, {
                 BackgroundColor3 = states[name] and purple
                     or Color3.fromRGB(65, 60, 75)
-            }):Play()
+            })
         end)
 
         table.insert(rows, {
@@ -174,53 +236,25 @@ local function render(page)
         })
     end
 
-    for _, item in ipairs(rows) do
-        item.frame.Visible = search.Text == ""
-            or string.find(item.label, string.lower(search.Text), 1, true) ~= nil
+    for name, button in pairs(tabButtons) do
+        button.BackgroundColor3 = name == page
+            and Color3.fromRGB(75, 42, 115)
+            or bg
+
+        button.TextColor3 = name == page and white or muted
     end
-end
 
-for i, page in ipairs({"Main", "Visuals", "Settings"}) do
-    local button = Instance.new("TextButton")
-    button.Size = UDim2.new(1, -10, 0, 35)
-    button.Position = UDim2.fromOffset(5, 8 + (i - 1) * 43)
-    button.BackgroundColor3 = bg
-    button.Text = page
-    button.TextColor3 = white
-    button.TextSize = 11
-    button.Font = Enum.Font.GothamBold
-    button.Parent = sidebar
-    Instance.new("UICorner", button).CornerRadius = UDim.new(0, 7)
-
-    button.Activated:Connect(function()
-        render(page)
-    end)
-end
-
-search:GetPropertyChangedSignal("Text"):Connect(function()
     local query = string.lower(search.Text)
+
     for _, item in ipairs(rows) do
         item.frame.Visible = query == ""
             or string.find(item.label, query, 1, true) ~= nil
     end
-end)
+end
 
-local minimized = false
-
-minimize.Activated:Connect(function()
-    minimized = not minimized
-
-    if minimized then
-        local info = TweenInfo.new(0.2, Enum.EasingStyle.Quad)
-        TweenService:Create(window, info, {
-            Size = UDim2.fromOffset(340, 45)
-        }):Play()
-    else
-        TweenService:Create(window, TweenInfo.new(0.2), {
-            Size = UDim2.fromOffset(340, 350)
-        }):Play()
-    end
-end)
-
-render("Main")
-print("goodSkillW loaded")
+-- Tabs
+for i, page in ipairs({"Main", "Visuals", "Settings"}) do
+    local button = Instance.new("TextButton")
+    button.Size = UDim2.new(1, -10, 0, 35)
+    button.Position = UDim2.fromOffset(5, 8 + (i - 1) * 43)
+    button.BackgroundC
