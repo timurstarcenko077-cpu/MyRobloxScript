@@ -1,52 +1,14 @@
 -- ============================================
---  МЕНЮ v4 — ФИКС КНОПКИ (3 способа клика)
--- ============================================
-local Players = game:GetService("Players")
-local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
-local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui")
-
--- Очистка старых меню
-for _, name in pairs({"ModernCheatMenu", "MainMenu", "SimpleMenu", "MobileMenu", "CheatMenu_v2", "CheatMenu_v3", "CheatMenu_v4"}) do
-	local old = playerGui:FindFirstChild(name)
-	if old then old:Destroy() end
-end
-for _, v in pairs(workspace:GetDescendants()) do
-	if v.Name == "CHEAT_ESP" or v.Name == "CHEAT_HL" or v.Name == "CHEAT_BOX" then v:Destroy() end
-end
-
-local ACCENT = Color3.fromRGB(138, 43, 226)
-local BG = Color3.fromRGB(18, 18, 22)
-local SIDEBAR = Color3.fromRGB(24, 24, 30)
-local ELEMENT = Color3.fromRGB(34, 34, 42)
-local TEXT = Color3.fromRGB(240, 240, 245)
-local SUBTEXT = Color3.fromRGB(150, 150, 160)
-
--- ============================================
--- GUI
--- ============================================
-local gui = Instance.new("ScreenGui")
-gui.Name = "CheatMenu_v4"
-gui.ResetOnSpawn = false
-gui.IgnoreGuiInset = true
-gui.DisplayOrder = 2147483647        -- МАКСИМАЛЬНЫЙ приоритет
-gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-gui.Enabled = true
-gui.Parent = playerGui
-
--- ============================================
--- 🔥 КНОПКА (большая, по центру снизу — безопасное место)
+-- 🔥 КНОПКА (перетаскиваемая + 3 способа открытия)
 -- ============================================
 local openBtn = Instance.new("TextButton")
 openBtn.Name = "OpenBtn"
-openBtn.Size = UDim2.new(0, 70, 0, 70)
-openBtn.Position = UDim2.new(0.5, -35, 1, -120)     -- по центру снизу
-openBtn.AnchorPoint = Vector2.new(0, 0)
+openBtn.Size = UDim2.new(0, 60, 0, 60)
+openBtn.Position = UDim2.new(0, 20, 0.5, -30)     -- слева по центру
 openBtn.BackgroundColor3 = ACCENT
-openBtn.Text = "МЕНЮ"
+openBtn.Text = "☰"
 openBtn.TextColor3 = Color3.new(1, 1, 1)
-openBtn.TextSize = 16
+openBtn.TextSize = 28
 openBtn.Font = Enum.Font.GothamBold
 openBtn.BorderSizePixel = 0
 openBtn.Active = true
@@ -55,17 +17,54 @@ openBtn.AutoButtonColor = true
 openBtn.ZIndex = 9999
 openBtn.Parent = gui
 
-local corner = Instance.new("UICorner", openBtn)
-corner.CornerRadius = UDim.new(1, 0)
+Instance.new("UICorner", openBtn).CornerRadius = UDim.new(1, 0)
 
 local strokeBtn = Instance.new("UIStroke", openBtn)
 strokeBtn.Color = Color3.fromRGB(200, 150, 255)
 strokeBtn.Thickness = 2.5
 
 -- ============================================
--- 🔥 ОБРАБОТКА КЛИКА — 3 СПОСОБА
+-- 🔥 ПЕРЕТАСКИВАНИЕ КНОПКИ (чтобы убрать с проблемного места)
 -- ============================================
-local main  -- объявим заранее
+local btnDragging = false
+local btnDragStart, btnStartPos
+local btnMoved = false
+
+openBtn.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 
+	or input.UserInputType == Enum.UserInputType.Touch then
+		btnDragging = true
+		btnMoved = false
+		btnDragStart = input.Position
+		btnStartPos = openBtn.Position
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if btnDragging and (input.UserInputType == Enum.UserInputType.MouseMovement 
+	or input.UserInputType == Enum.UserInputType.Touch) then
+		local delta = input.Position - btnDragStart
+		if math.abs(delta.X) > 5 or math.abs(delta.Y) > 5 then
+			btnMoved = true
+		end
+		openBtn.Position = UDim2.new(
+			btnStartPos.X.Scale, btnStartPos.X.Offset + delta.X,
+			btnStartPos.Y.Scale, btnStartPos.Y.Offset + delta.Y
+		)
+	end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 
+	or input.UserInputType == Enum.UserInputType.Touch then
+		btnDragging = false
+	end
+end)
+
+-- ============================================
+-- 🔥 ОТКРЫТИЕ МЕНЮ (3 способа + защита от перетаскивания)
+-- ============================================
+local main
 
 local function toggleMenu()
 	if main then
@@ -73,243 +72,56 @@ local function toggleMenu()
 	end
 end
 
--- Способ 1: стандартный клик
-openBtn.MouseButton1Click:Connect(toggleMenu)
-
--- Способ 2: Activated (работает на мобиле)
-openBtn.Activated:Connect(toggleMenu)
-
--- Способ 3: InputBegan/Ended (универсальный)
-local pressed = false
-openBtn.InputBegan:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 
-	or input.UserInputType == Enum.UserInputType.Touch then
-		pressed = true
+-- Способ 1: обычный клик
+openBtn.MouseButton1Click:Connect(function()
+	if not btnMoved then
+		toggleMenu()
 	end
 end)
+
+-- Способ 2: Activated (для мобилы)
+openBtn.Activated:Connect(function()
+	if not btnMoved then
+		toggleMenu()
+	end
+end)
+
+-- Способ 3: InputEnded (если не двигали — считаем кликом)
 openBtn.InputEnded:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 
 	or input.UserInputType == Enum.UserInputType.Touch then
-		if pressed then
-			pressed = false
+		if not btnMoved then
 			toggleMenu()
 		end
 	end
 end)
 
 -- ============================================
--- ГЛАВНОЕ ОКНО
+-- 🔥 FALLBACK: двойной тап по экрану (если кнопка не работает)
 -- ============================================
-main = Instance.new("Frame")
-main.Name = "Main"
-main.Size = UDim2.new(0, 500, 0, 340)
-main.Position = UDim2.new(0.5, -250, 0.5, -170)
-main.BackgroundColor3 = BG
-main.BorderSizePixel = 0
-main.Visible = false
-main.Active = true
-main.ZIndex = 9998
-main.Parent = gui
-Instance.new("UICorner", main).CornerRadius = UDim.new(0, 12)
-
-local mainStroke = Instance.new("UIStroke", main)
-mainStroke.Color = Color3.fromRGB(70, 70, 90)
-mainStroke.Thickness = 1.5
-
--- Перетаскивание
-local dragging = false
-local dragStart, startPos
-
-local function beginDrag(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-		dragging = true
-		dragStart = input.Position
-		startPos = main.Position
-	end
-end
-
-main.InputBegan:Connect(beginDrag)
-
-UserInputService.InputChanged:Connect(function(input)
-	if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-		local delta = input.Position - dragStart
-		main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+local lastTap = 0
+UserInputService.InputBegan:Connect(function(input, gp)
+	if gp then return end
+	if input.UserInputType == Enum.UserInputType.Touch 
+	or input.UserInputType == Enum.UserInputType.MouseButton1 then
+		local now = tick()
+		if now - lastTap < 0.4 then
+			toggleMenu()
+		end
+		lastTap = now
 	end
 end)
 
-UserInputService.InputEnded:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-		dragging = false
-	end
-end)
-
--- Заголовок окна (для перетаскивания)
-local titleBar = Instance.new("TextLabel")
-titleBar.Size = UDim2.new(1, 0, 0, 32)
-titleBar.BackgroundTransparency = 1
-titleBar.Text = "  ⚡ CHEAT MENU v4"
-titleBar.TextColor3 = ACCENT
-titleBar.Font = Enum.Font.GothamBold
-titleBar.TextSize = 15
-titleBar.TextXAlignment = Enum.TextXAlignment.Left
-titleBar.ZIndex = 9999
-titleBar.Parent = main
-
--- Кнопка закрытия (X)
-local closeBtn = Instance.new("TextButton")
-closeBtn.Size = UDim2.new(0, 28, 0, 28)
-closeBtn.Position = UDim2.new(1, -34, 0, 2)
-closeBtn.BackgroundColor3 = Color3.fromRGB(220, 50, 60)
-closeBtn.Text = "X"
-closeBtn.TextColor3 = Color3.new(1,1,1)
-closeBtn.Font = Enum.Font.GothamBold
-closeBtn.TextSize = 14
-closeBtn.BorderSizePixel = 0
-closeBtn.ZIndex = 9999
-closeBtn.Parent = main
-Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 6)
-
-closeBtn.MouseButton1Click:Connect(function()
-	main.Visible = false
-end)
-
--- Сайдбар
-local sidebar = Instance.new("Frame")
-sidebar.Size = UDim2.new(0, 130, 1, -40)
-sidebar.Position = UDim2.new(0, 0, 0, 36)
-sidebar.BackgroundColor3 = SIDEBAR
-sidebar.BorderSizePixel = 0
-sidebar.ZIndex = 9998
-sidebar.Parent = main
-Instance.new("UICorner", sidebar).CornerRadius = UDim.new(0, 10)
-
-local tabHolder = Instance.new("Frame")
-tabHolder.Size = UDim2.new(1, -12, 1, -12)
-tabHolder.Position = UDim2.new(0, 6, 0, 6)
-tabHolder.BackgroundTransparency = 1
-tabHolder.ZIndex = 9999
-tabHolder.Parent = sidebar
-local tabLayout = Instance.new("UIListLayout", tabHolder)
-tabLayout.Padding = UDim.new(0, 5)
-
--- Контент
-local content = Instance.new("Frame")
-content.Size = UDim2.new(1, -140, 1, -46)
-content.Position = UDim2.new(0, 135, 0, 40)
-content.BackgroundTransparency = 1
-content.ZIndex = 9998
-content.Parent = main
-
-local scroll = Instance.new("ScrollingFrame")
-scroll.Size = UDim2.new(1, 0, 1, 0)
-scroll.BackgroundTransparency = 1
-scroll.BorderSizePixel = 0
-scroll.ScrollBarThickness = 3
-scroll.ScrollBarImageColor3 = ACCENT
-scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
-scroll.ZIndex = 9999
-scroll.Parent = content
-local scrollLayout = Instance.new("UIListLayout", scroll)
-scrollLayout.Padding = UDim.new(0, 6)
-scrollLayout.SortOrder = Enum.SortOrder.LayoutOrder
-
 -- ============================================
--- ЭЛЕМЕНТЫ UI
+-- 🔥 FALLBACK для ПК: клавиша RightControl
 -- ============================================
-local function createToggle(name, default, callback)
-	local frame = Instance.new("Frame")
-	frame.Size = UDim2.new(1, -8, 0, 34)
-	frame.BackgroundColor3 = ELEMENT
-	frame.BorderSizePixel = 0
-	frame.ZIndex = 9999
-	frame.Parent = scroll
-	Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 8)
-
-	local label = Instance.new("TextLabel")
-	label.Size = UDim2.new(1, -70, 1, 0)
-	label.Position = UDim2.new(0, 12, 0, 0)
-	label.BackgroundTransparency = 1
-	label.Text = name
-	label.TextColor3 = TEXT
-	label.Font = Enum.Font.GothamMedium
-	label.TextSize = 13
-	label.TextXAlignment = Enum.TextXAlignment.Left
-	label.ZIndex = 9999
-	label.Parent = frame
-
-	local switch = Instance.new("TextButton")
-	switch.Size = UDim2.new(0, 42, 0, 20)
-	switch.Position = UDim2.new(1, -52, 0.5, -10)
-	switch.BackgroundColor3 = default and ACCENT or Color3.fromRGB(50, 50, 62)
-	switch.Text = ""
-	switch.BorderSizePixel = 0
-	switch.AutoButtonColor = false
-	switch.ZIndex = 9999
-	switch.Parent = frame
-	Instance.new("UICorner", switch).CornerRadius = UDim.new(1, 0)
-
-	local circle = Instance.new("Frame")
-	circle.Size = UDim2.new(0, 16, 0, 16)
-	circle.Position = default and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
-	circle.BackgroundColor3 = Color3.new(1, 1, 1)
-	circle.BorderSizePixel = 0
-	circle.ZIndex = 9999
-	circle.Parent = switch
-	Instance.new("UICorner", circle).CornerRadius = UDim.new(1, 0)
-
-	local state = default
-	local function toggle()
-		state = not state
-		TweenService:Create(switch, TweenInfo.new(0.15), {BackgroundColor3 = state and ACCENT or Color3.fromRGB(50, 50, 62)}):Play()
-		TweenService:Create(circle, TweenInfo.new(0.15), {Position = state and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)}):Play()
-		pcall(callback, state)
+UserInputService.InputBegan:Connect(function(input, gp)
+	if gp then return end
+	if input.KeyCode == Enum.KeyCode.RightControl 
+	or input.KeyCode == Enum.KeyCode.RightShift then
+		toggleMenu()
 	end
-
-	switch.MouseButton1Click:Connect(toggle)
-	switch.Activated:Connect(toggle)
-end
-
-local function createButton(name, callback)
-	local btn = Instance.new("TextButton")
-	btn.Size = UDim2.new(1, -8, 0, 34)
-	btn.BackgroundColor3 = ELEMENT
-	btn.Text = name
-	btn.TextColor3 = TEXT
-	btn.Font = Enum.Font.GothamMedium
-	btn.TextSize = 13
-	btn.BorderSizePixel = 0
-	btn.AutoButtonColor = false
-	btn.ZIndex = 9999
-	btn.Parent = scroll
-	Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
-
-	local function fire()
-		pcall(callback)
-	end
-	btn.MouseButton1Click:Connect(fire)
-	btn.Activated:Connect(fire)
-end
-
-local function createSlider(name, min, max, default, callback)
-	local frame = Instance.new("Frame")
-	frame.Size = UDim2.new(1, -8, 0, 48)
-	frame.BackgroundColor3 = ELEMENT
-	frame.BorderSizePixel = 0
-	frame.ZIndex = 9999
-	frame.Parent = scroll
-	Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 8)
-
-	local label = Instance.new("TextLabel")
-	label.Size = UDim2.new(1, -20, 0, 18)
-	label.Position = UDim2.new(0, 10, 0, 4)
-	label.BackgroundTransparency = 1
-	label.Text = name .. ": " .. default
-	label.TextColor3 = TEXT
-	label.Font = Enum.Font.GothamMedium
-	label.TextSize = 12
-	label.TextXAlignment = Enum.TextXAlignment.Left
-	label.ZIndex = 9999
+end)9
 	label.Parent = frame
 
 	local barBg = Instance.new("Frame")
